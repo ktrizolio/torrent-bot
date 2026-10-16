@@ -1,0 +1,7 @@
+.env
+.venv/
+legado/
+dados/
+**/__pycache__/
+**/*.db
+**/*.db-*

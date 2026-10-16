@@ -1,0 +1,44 @@
+# Scraper (atualiza o banco sozinho) + bot do Telegram + API do Catálogo do Jellyfin.
+# Os dois compartilham a pasta ./dados, então o bot sempre lê o banco mais recente.
+#
+# Instalar / atualizar (dentro da pasta do projeto):
+#   docker compose up -d --build
+name: torrent-bot
+
+x-comum: &comum
+  build: .
+  image: torrent-bot:latest
+  restart: unless-stopped
+  env_file: .env
+  environment:
+    DB_PATH: /app/dados/torrents.db
+  volumes:
+    - ./dados:/app/dados
+  logging:
+    driver: json-file
+    options:
+      max-size: "5m"
+      max-file: "3"
+
+services:
+  scraper:
+    <<: *comum
+    container_name: torrent-scraper
+    working_dir: /app/scraper
+    environment:
+      DB_PATH: /app/dados/torrents.db
+      # Agendamento: edite HORARIO_DIARIO ou INTERVALO_HORAS no .env e rode "docker compose up -d".
+      INTERVALO_HORAS: ${INTERVALO_HORAS:-6}
+      # Se definido (ex: 00:00), roda todo dia nesse horário e ignora o intervalo
+      HORARIO_DIARIO: ${HORARIO_DIARIO:-}
+    command: ["python", "scraper.py"]
+
+  bot:
+    <<: *comum
+    container_name: telegram-bot
+    working_dir: /app/bot
+    network_mode: host        # para alcançar o qBittorrent na rede local
+    volumes:
+      - ./dados:/app/dados
+      - ${PASTA_CATALOGO_HOST:-./catalogo}:/catalogo   # bibliotecas do Catálogo do Jellyfin (geradas por catalogo.py)
+    command: ["python", "bot.py"]

@@ -1,0 +1,8 @@
+.env
+.venv/
+dados/
+catalogo/
+__pycache__/
+*.db
+*.db-*
+*.bak*
